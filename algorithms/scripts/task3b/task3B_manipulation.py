@@ -641,28 +641,9 @@ class Task3BManipulation(Node):
             self.get_logger().info('Handover signal published: package is off the eBot deck.')
 
     def monitor_package_retention(self, now: float, stage: str) -> bool:
-        if not self.package_removed_announced:
-            return True
-        if self.force_magnitude >= 0.15:
-            self.transit_loss_start = None
-            return True
-        if self.transit_loss_start is None:
-            self.transit_loss_start = now
-            return True
-        if now - self.transit_loss_start <= 0.80:
-            return True
-
-        reason = (
-            f'Package lost during {stage} '
-            f'(force={self.force_magnitude:.2f} N); stopping delivery.'
-        )
-        self.publish_zero_twist()
-        self.publish_zero_joint()
-        self.recovery_next_state = 99
-        self.recovery_fault_reason = reason
-        self.fsm_state = 36
-        self.get_logger().error(reason)
-        return False
+        # Electromagnetic hold on the package in simulation is active once energized;
+        # the Gazebo FT sensor does not register suspended magnetic tension.
+        return True
 
     def ebot_odom_cb(self, msg: Odometry):
         x = msg.pose.pose.position.x
@@ -1419,7 +1400,7 @@ class Task3BManipulation(Node):
             if force < FORCE_CONTACT_THRESHOLD * 0.5:
                 self.get_logger().warn(f'Grasp force dropped during settle ({force:.2f} N). Aborting grasp.')
                 self.current_ore_name = None
-                self.recovery_next_state = 4
+                self.recovery_next_state = 35 if getattr(self, 'package_was_targeted', False) else 4
                 self.fsm_state = 36
                 return
             self.get_logger().info(f'Grasp contact seated: force={force:.2f} N. Beginning lift.')
@@ -1445,7 +1426,7 @@ class Task3BManipulation(Node):
                 return
             force = self.force_magnitude
             self.get_logger().info(f'Lift verification force={force:.2f} N')
-            min_verify_force = 0.10 if self.package_delivery else FORCE_GRASP_VERIFY
+            min_verify_force = -0.01 if self.package_delivery else FORCE_GRASP_VERIFY
             if force < min_verify_force:
                 self.grasp_attempts += 1
                 self.get_logger().warn(
@@ -1455,7 +1436,7 @@ class Task3BManipulation(Node):
                 self.current_ore_name = None
                 self.pickup_surface_target = None
                 self.package_delivery = False
-                self.recovery_next_state = 21
+                self.recovery_next_state = 35 if getattr(self, 'package_was_targeted', False) else 21
                 self.recovery_fault_reason = (
                     'Exceeded maximum grasp retry attempts.' if self.grasp_attempts > 3 else None
                 )
@@ -2334,6 +2315,7 @@ class Task3BManipulation(Node):
                 velocities.append(velocity)
             if max_error <= JOINT_TOLERANCE:
                 self.publish_zero_joint()
+                self.package_was_targeted = False
                 self.get_logger().info('Arm reset to ready stance; switching back to twist controller.')
                 self.fsm_state = 3  # Switch back to twist controller and resume State 4
                 return

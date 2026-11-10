@@ -39,9 +39,21 @@ package_name = 'algorithms'
 #
 SCRIPTS = [
     # Your nodes go here, for example:
-    # 'scripts/task1a/task1a.py',
-    # 'scripts/task1b/task1b.py',
-    # 'scripts/task1c/task1c.py',
+      'scripts/task1a/ore_detector.py',
+      'scripts/task1b/arm_waypoints.py',
+      'scripts/task1c/task1c.py',
+      'scripts/task2a/task2A_perception.py',
+      'scripts/task2a/task2A_manipulation.py',
+      'scripts/task2b/task2B_planning.py',
+      'scripts/task2b/task2B_navigation.py',
+      'scripts/task3a/task3A_perception.py',
+      'scripts/task3a/task3A_manipulation.py',
+      'scripts/task3a/task3A_planning.py',
+      'scripts/task3a/task3A_navigation.py',
+      'scripts/task3b/task3B_perception.py',
+      'scripts/task3b/task3B_manipulation.py',
+      'scripts/task3b/task3B_planning.py',
+      'scripts/task3b/task3B_navigation.py',
 ]
 
 setup(
